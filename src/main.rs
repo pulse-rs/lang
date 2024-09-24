@@ -7,6 +7,7 @@ use clap::{
     builder::{styling, PossibleValuesParser, Styles, TypedValueParser},
     Args, Parser, Subcommand, ValueHint,
 };
+use crate::commands::init::init_command;
 
 pub mod commands;
 pub mod logger;
@@ -24,7 +25,8 @@ fn main() -> Result<()> {
     log::debug!("Parsed clap arguments");
 
     let result = match args.command {
-        Commands::Run {} => run_command() 
+        Commands::Run {} => run_command(),
+        Commands::Init { name } => init_command(name.clone()),
     };
 
     match result {
@@ -32,7 +34,7 @@ fn main() -> Result<()> {
             log::debug!("Finished program")
         }
         Err(err) => {
-            println!("{:?}", err);
+            println!("{:#?}", err);
         }
     }
 

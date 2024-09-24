@@ -19,6 +19,12 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    #[command(about =  "Run a file")]
-    Run {}
+    #[command(about = "Run a file")]
+    Run {},
+
+    #[command(about = "Initialize a new project")]
+    Init {
+        #[arg(name = "NAME")]
+        name: Option<String>,
+    },
 }
