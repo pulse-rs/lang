@@ -1,7 +1,7 @@
 use anyhow::Result;
 use cli::{Cli, Commands};
 use commands::run::run_command;
-use handler::setup_panic_handler;
+use panic_handler::setup_panic_handler;
 use logger::setup_logger;
 use clap::{
     builder::{styling, PossibleValuesParser, Styles, TypedValueParser},
@@ -12,7 +12,7 @@ use crate::commands::init::init_command;
 pub mod commands;
 pub mod logger;
 pub mod cli;
-pub mod handler;
+pub mod panic_handler;
 pub mod fs;
 pub mod project;
 pub mod error;
