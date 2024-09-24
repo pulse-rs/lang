@@ -1,5 +1,7 @@
 use std::cmp::PartialEq;
-use std::env;
+use std::{env, fs};
+use std::fmt::format;
+use std::path::PathBuf;
 use anyhow::Result;
 use crate::error::PulseError::{ProjectNotFound, InvalidProjectStructure, MultipleEntryPoints};
 use crate::fs::find_nearest_file;
@@ -10,9 +12,32 @@ pub enum ProjectType {
     Library,
 }
 
+impl ProjectType {
+    pub fn file_name(&self) -> &str {
+        match self {
+            ProjectType::Binary => "main.pulse",
+            ProjectType::Library => "lib.pulse",
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Project {
     pub project_type: ProjectType,
+    pub content: String,
+    pub root: PathBuf,
+}
+
+impl Project {
+    pub fn from_path(root: PathBuf, project_type: ProjectType) -> Project {
+        let content = fs::read_to_string(root.join(format!("src/{}", project_type.file_name()))).unwrap_or_default();
+
+        Project {
+            project_type,
+            content,
+            root,
+        }
+    }
 }
 
 pub fn find_project() -> Result<Project> {
@@ -34,7 +59,7 @@ pub fn find_project() -> Result<Project> {
                 _ => return Err(InvalidProjectStructure.into()),
             };
 
-            return Ok(Project { project_type });
+            return Ok(Project::from_path(root.to_path_buf(), project_type));
         }
     }
 
