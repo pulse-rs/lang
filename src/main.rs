@@ -13,6 +13,8 @@ pub mod logger;
 pub mod cli;
 pub mod handler;
 pub mod fs;
+pub mod project;
+pub mod error;
 
 fn main() -> Result<()> {
     setup_panic_handler();
