@@ -1,9 +1,11 @@
 use anyhow::Result;
-use crate::project::find_project;
+use crate::project::{Project};
 
 pub fn run_command() -> Result<()> {
-    let project = find_project()?;
+    let mut project = Project::find_project()?;
 
-    println!("Running project: {:#?}", project);
+    project.build_main()?;
+    println!("{:#?}", project);
+
     Ok(())
 }

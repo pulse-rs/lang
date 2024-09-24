@@ -1,3 +1,6 @@
-fn main() {
+fn main(arg: int) -> int {
+    --arg;
     println("Hello, World!");
+
+    let x123 = 123;
 }
