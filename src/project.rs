@@ -3,6 +3,7 @@ use std::{env, fs};
 use std::fmt::format;
 use std::path::PathBuf;
 use anyhow::Result;
+use crate::ast::parser::Parser;
 use crate::error::PulseError::{ProjectNotFound, InvalidProjectStructure, MultipleEntryPoints};
 use crate::fs::find_nearest_file;
 use crate::lexer::Lexer;
@@ -28,6 +29,7 @@ pub struct Project {
     pub project_type: ProjectType,
     pub root: PathBuf,
     pub tokens: Vec<Token>,
+    pub content: String,
 }
 
 impl Project {
@@ -36,6 +38,7 @@ impl Project {
             project_type,
             root,
             tokens: vec![],
+            content: String::new(),
         }
     }
 }
@@ -77,6 +80,7 @@ impl Project {
     pub fn build_main(&mut self) -> Result<()> {
         let main_file = self.main_file();
         let main_content = fs::read_to_string(&main_file)?;
+        self.content = main_content.clone();
 
         log::debug!("Building main file: {:?}", main_file);
 
@@ -84,6 +88,8 @@ impl Project {
         let tokens = lexer.lex()?;
 
         self.tokens = tokens;
+
+        let parser = Parser::new(self.tokens.clone());
 
         Ok(())
     }

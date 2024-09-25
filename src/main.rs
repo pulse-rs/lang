@@ -8,6 +8,7 @@ use clap::{
     Args, Parser, Subcommand, ValueHint,
 };
 use crate::commands::init::init_command;
+use crate::diagnostic::print_diagnostic;
 
 pub mod commands;
 pub mod logger;
@@ -18,6 +19,7 @@ pub mod project;
 pub mod error;
 mod lexer;
 mod diagnostic;
+mod ast;
 
 fn main() -> Result<()> {
     setup_panic_handler();
@@ -36,7 +38,7 @@ fn main() -> Result<()> {
             log::debug!("Finished program")
         }
         Err(err) => {
-            println!("{:#?}", err);
+            log::error!("{:?}", err);
         }
     }
 

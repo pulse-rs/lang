@@ -1,6 +1,7 @@
 use crate::lexer::position::Position;
 use crate::lexer::token::{Token, TokenKind};
 use anyhow::Result;
+use crate::error::PulseError::InvalidToken;
 use crate::lexer::span::TextSpan;
 
 pub mod token;
@@ -266,7 +267,7 @@ impl Lexer {
                     }
                     _ => {
                         self.consume();
-                        TokenKind::Bad
+                        return Err(InvalidToken(c.to_string(), TextSpan::new(start_pos, self.position, c.to_string())).into());
                     }
                 };
 

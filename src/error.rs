@@ -1,4 +1,5 @@
 use thiserror::{Error};
+use crate::lexer::span::TextSpan;
 
 #[derive(Error, Debug)]
 pub enum PulseError {
@@ -12,4 +13,6 @@ pub enum PulseError {
     InvalidProjectStructure,
     #[error("Found both src/main.pulse and src/lib.pulse. Only one is allowed")]
     MultipleEntryPoints,
+    #[error("Invalid token: {0}")]
+    InvalidToken(String, TextSpan),
 }
