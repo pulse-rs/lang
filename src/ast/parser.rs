@@ -74,12 +74,52 @@ impl Parser {
 
         let stmt = match token.kind {
             TokenKind::Fn | TokenKind::Export => self.parse_fn(),
+            TokenKind::Use => self.parse_use(),
             _ => unimplemented!("Token kind: {:?}", token.kind),
         };
 
-        log::debug!("{:#?}", stmt);
-
         stmt
+    }
+
+    pub fn parse_use(&mut self) -> Result<Stmt> {
+        let use_token = self.consume();
+
+        let mut items = vec![];
+
+        self.expect(TokenKind::LeftBrace)?;
+
+        let mut i = 0;
+        while self.peek().kind != TokenKind::RightBrace && !self.is_eof() {
+            i += 1;
+            let item = self.expect(TokenKind::Identifier)?;
+
+            if self.peek().kind != TokenKind::RightBrace {
+                self.expect(TokenKind::Comma)?;
+            }
+
+            items.push(item);
+        }
+
+        self.expect(TokenKind::RightBrace)?;
+
+        self.expect(TokenKind::From)?;
+
+        let from = if self.peek().is_string() {
+            self.consume()
+        } else {
+            return Err(ExpectedToken(
+                "string".to_string(),
+                "Expected string that is valid module or file".to_string(),
+                self.peek().span.clone(),
+            ).into());
+        };
+
+
+        Ok(Stmt::new_use(
+            use_token,
+            from,
+            items,
+        ))
     }
 
     pub fn parse_type_annotation(&mut self) -> Result<TypeAnnotation> {

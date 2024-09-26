@@ -15,7 +15,7 @@ impl Ast {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Stmt {
     Expr(Box<Expr>),
-    Import(Import),
+    Use(Use),
     Block(Block),
     If(If),
     Return(Return),
@@ -32,6 +32,14 @@ impl Stmt {
             body,
             exported,
             return_type,
+        })
+    }
+
+    pub fn new_use(use_token: Token, from: Token, items: Vec<Token>) -> Self {
+        Stmt::Use(Use {
+            use_token,
+            from,
+            items,
         })
     }
 }
@@ -96,8 +104,8 @@ pub struct ElseIf {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Import {
-    pub import_token: Token,
+pub struct Use {
+    pub use_token: Token,
     pub from: Token,
     pub items: Vec<Token>,
 }

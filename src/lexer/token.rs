@@ -16,6 +16,10 @@ impl Token {
     pub fn literal(&self) -> String {
         self.span.literal.clone()
     }
+
+    pub fn is_string(&self) -> bool {
+        matches!(self.kind, TokenKind::String(_))
+    }
 }
 
 impl Display for TokenKind {
@@ -48,6 +52,7 @@ impl Display for TokenKind {
             TokenKind::Break => write!(f, "break"),
             TokenKind::Continue => write!(f, "continue"),
             TokenKind::Use => write!(f, "use"),
+            TokenKind::From => write!(f, "from"),
             TokenKind::Export => write!(f, "export"),
             TokenKind::True => write!(f, "true"),
             TokenKind::False => write!(f, "false"),
@@ -120,6 +125,7 @@ pub enum TokenKind {
     Continue,
     Use,
     Export,
+    From,
 
     True,
     False,

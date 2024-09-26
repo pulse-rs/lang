@@ -1,1 +1,3 @@
+use { println, eprintln } from "std::io";
+
 export fn main(arg: int) -> int {}

@@ -158,6 +158,7 @@ impl Lexer {
                     "continue" => TokenKind::Continue,
                     "use" => TokenKind::Use,
                     "export" => TokenKind::Export,
+                    "from" => TokenKind::From,
 
                     _ => TokenKind::Identifier,
                 }
