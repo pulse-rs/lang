@@ -105,12 +105,19 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
             hint: None,
             content,
         },
+        PulseError::ExpectedToken(expected, hint, span) => Diagnostic {
+            title: format!("Expected {}", expected),
+            text: None,
+            level: Level::Error,
+            location: Some(span.clone()),
+            hint: Some(hint.clone()),
+            content,
+        },
         _ => {
             log::error!("{:?}", err);
             return;
         }
     };
-    println!("{:#?}", diagnostic);
 
     let mut buff = BufWriter::new(std::io::stderr());
     diagnostic.log_pretty(&mut buff);

@@ -11,7 +11,6 @@ pub fn run_command() -> Result<()> {
             Ok(())
         }
         Err(err) => {
-            println!("{:?}", project.content);
             print_diagnostic(err, Some(project.content));
             Ok(())
         }

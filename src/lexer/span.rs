@@ -39,6 +39,6 @@ impl TextSpan {
 
 impl std::fmt::Debug for TextSpan {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.literal)
+        write!(f, "\"{}\" ({}:{})", self.literal, self.start.line, self.start.column)
     }
 }

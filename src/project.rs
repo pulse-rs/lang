@@ -89,7 +89,9 @@ impl Project {
 
         self.tokens = tokens;
 
-        let parser = Parser::new(self.tokens.clone());
+        let mut parser = Parser::new(self.tokens.clone());
+        let ast = parser.parse()?;
+        log::debug!("{:?}", ast);
 
         Ok(())
     }

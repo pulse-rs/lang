@@ -1,8 +1,8 @@
 use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use crate::lexer::span::TextSpan;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub span: TextSpan,
@@ -12,17 +12,78 @@ impl Token {
     pub fn new(kind: TokenKind, span: TextSpan) -> Self {
         Self { kind, span }
     }
-}
 
-impl Debug for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut struc = f.debug_struct("Token");
-
-        struc.field("kind", &self.kind).field("span", &self.span);
-
-        struc.finish()
+    pub fn literal(&self) -> String {
+        self.span.literal.clone()
     }
 }
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenKind::LeftParen => write!(f, "("),
+            TokenKind::RightParen => write!(f, ")"),
+            TokenKind::LeftBrace => write!(f, "{{"),
+            TokenKind::RightBrace => write!(f, "}}"),
+            TokenKind::LeftBracket => write!(f, "["),
+            TokenKind::RightBracket => write!(f, "]"),
+            TokenKind::Comma => write!(f, ","),
+            TokenKind::Dot => write!(f, "."),
+            TokenKind::Colon => write!(f, ":"),
+            TokenKind::Semicolon => write!(f, ";"),
+            TokenKind::Arrow => write!(f, "->"),
+            TokenKind::Identifier => write!(f, "Identifier"),
+            TokenKind::String(s) => write!(f, "{}", s),
+            TokenKind::Rational(r) => write!(f, "{}", r),
+            TokenKind::Integer(i) => write!(f, "{}", i),
+            TokenKind::Boolean(b) => write!(f, "{}", b),
+            TokenKind::Fn => write!(f, "fn"),
+            TokenKind::Let => write!(f, "let"),
+            TokenKind::If => write!(f, "if"),
+            TokenKind::Else => write!(f, "else"),
+            TokenKind::While => write!(f, "while"),
+            TokenKind::For => write!(f, "for"),
+            TokenKind::In => write!(f, "in"),
+            TokenKind::Return => write!(f, "return"),
+            TokenKind::Break => write!(f, "break"),
+            TokenKind::Continue => write!(f, "continue"),
+            TokenKind::Use => write!(f, "use"),
+            TokenKind::Export => write!(f, "export"),
+            TokenKind::True => write!(f, "true"),
+            TokenKind::False => write!(f, "false"),
+            TokenKind::Null => write!(f, "null"),
+            TokenKind::Plus => write!(f, "+"),
+            TokenKind::Minus => write!(f, "-"),
+            TokenKind::Asterisk => write!(f, "*"),
+            TokenKind::Slash => write!(f, "/"),
+            TokenKind::Equals => write!(f, "="),
+            TokenKind::Ampersand => write!(f, "&"),
+            TokenKind::Pipe => write!(f, "|"),
+            TokenKind::Caret => write!(f, "^"),
+            TokenKind::DoubleAsterisk => write!(f, "**"),
+            TokenKind::Percent => write!(f, "%"),
+            TokenKind::Tilde => write!(f, "~"),
+            TokenKind::GreaterThan => write!(f, ">"),
+            TokenKind::LessThan => write!(f, "<"),
+            TokenKind::GreaterThanEquals => write!(f, ">="),
+            TokenKind::LessThanEquals => write!(f, "<="),
+            TokenKind::EqualsEquals => write!(f, "=="),
+            TokenKind::BangEquals => write!(f, "!="),
+            TokenKind::Bang => write!(f, "!"),
+            TokenKind::And => write!(f, "&&"),
+            TokenKind::Or => write!(f, "||"),
+            TokenKind::Increment => write!(f, "++"),
+            TokenKind::Decrement => write!(f, "--"),
+            TokenKind::MinusEquals => write!(f, "-="),
+            TokenKind::PlusEquals => write!(f, "+="),
+            TokenKind::EOF => write!(f, "EOF"),
+            TokenKind::Whitespace => write!(f, "Whitespace"),
+            TokenKind::Bad => write!(f, "Bad"),
+            TokenKind::Comment => write!(f, "Comment"),
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -40,7 +101,7 @@ pub enum TokenKind {
     Arrow,
 
     // Literals
-    Identifier(String),
+    Identifier,
     String(String),
     Rational(f64),
     Integer(i64),

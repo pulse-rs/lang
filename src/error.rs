@@ -15,4 +15,6 @@ pub enum PulseError {
     MultipleEntryPoints,
     #[error("Invalid token: {0}")]
     InvalidToken(String, TextSpan),
+    #[error("Expected {0}.")]
+    ExpectedToken(String, String, TextSpan),
 }

@@ -159,7 +159,7 @@ impl Lexer {
                     "use" => TokenKind::Use,
                     "export" => TokenKind::Export,
 
-                    _ => TokenKind::Identifier(ident),
+                    _ => TokenKind::Identifier,
                 }
             } else {
                 let punc = match c {
