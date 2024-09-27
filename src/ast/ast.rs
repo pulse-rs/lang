@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::{Display, Formatter};
 use crate::lexer::token::Token;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,7 +21,21 @@ pub enum Stmt {
     If(If),
     Return(Return),
     Fn(Fn),
+    Let(Let),
     // TODO: loop, continue, break
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Let {
+    pub ident: Token,
+    pub initializer: Box<Expr>,
+    pub type_annotation: Option<TypeAnnotation>,
+}
+
+impl From<Expr> for Stmt {
+    fn from(expr: Expr) -> Self {
+        Stmt::Expr(Box::new(expr))
+    }
 }
 
 impl Stmt {
@@ -40,6 +55,24 @@ impl Stmt {
             use_token,
             from,
             items,
+        })
+    }
+
+    pub fn new_if(if_token: Token, condition: Box<Expr>, then_block: Block, else_ifs: Vec<ElseIf>, else_block: Option<Block>) -> Self {
+        Stmt::If(If {
+            if_token,
+            condition,
+            then_block,
+            else_ifs,
+            else_block,
+        })
+    }
+
+    pub fn new_let(ident: Token, initializer: Box<Expr>, type_annotation: Option<TypeAnnotation>) -> Self {
+        Stmt::Let(Let {
+            ident,
+            initializer,
+            type_annotation,
         })
     }
 }
@@ -136,27 +169,36 @@ pub struct Literal {
     pub value: LiteralType,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum BinOp {
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum BinOpKind {
+    // Arithmetic
     Plus,
     Minus,
-    Asterisk,
-    Slash,
+    Multiply,
+    Divide,
+    Power,
+    Modulo,
+    // Bitwise
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
+    // Relational
     Equals,
-    Ampersand,
-    Pipe,
-    Caret,
-    DoubleAsterisk,
-    Percent,
-    Tilde,
-    GreaterThan,
+    NotEquals,
     LessThan,
-    GreaterThanEquals,
-    LessThanEquals,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    // Logical
+    And,
+    Or,
+    // Equality
     EqualsEquals,
     BangEquals,
+    // Increment/Decrement
     Increment,
     Decrement,
+    // Assignment
     MinusEquals,
     PlusEquals,
 }
@@ -164,20 +206,14 @@ pub enum BinOp {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub left: Box<Expr>,
-    pub operator: BinOp,
+    pub operator: BinOpKind,
     pub right: Box<Expr>,
-    pub token: Token,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum UnaryOp {
-    Minus,
-    Not,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
-    pub operator: UnaryOp,
+    pub operator: UnOperator,
     pub expr: Box<Expr>,
     pub token: Token,
 }
@@ -216,9 +252,91 @@ pub struct CallExpr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assign {
-    pub ident: Variable,
+    pub ident: Token,
     pub value: Box<Expr>,
     pub token: Token,
+}
+
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum UnOpKind {
+    Minus,
+    BitwiseNot,
+}
+
+impl Display for UnOpKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnOpKind::Minus => write!(f, "-"),
+            UnOpKind::BitwiseNot => write!(f, "~"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnOperator {
+    pub(crate) kind: UnOpKind,
+    token: Token,
+}
+
+impl UnOperator {
+    pub fn new(kind: UnOpKind, token: Token) -> Self {
+        UnOperator { kind, token }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BinOperator {
+    pub kind: BinOpKind,
+    pub token: Token,
+}
+
+impl BinOperator {
+    pub fn new(kind: BinOpKind, token: Token) -> Self {
+        BinOperator { kind, token }
+    }
+
+    pub fn precedence(&self) -> u8 {
+        match self.kind {
+            BinOpKind::Power => 20,
+            BinOpKind::Multiply => 19,
+            BinOpKind::Divide => 19,
+            BinOpKind::Modulo => 19,
+            BinOpKind::Plus => 18,
+            BinOpKind::Minus => 18,
+            BinOpKind::BitwiseAnd => 17,
+            BinOpKind::BitwiseXor => 16,
+            BinOpKind::BitwiseOr => 15,
+            BinOpKind::Equals => 30,
+            BinOpKind::NotEquals => 30,
+            BinOpKind::LessThan => 29,
+            BinOpKind::LessThanOrEqual => 29,
+            BinOpKind::GreaterThan => 29,
+            BinOpKind::GreaterThanOrEqual => 29,
+            BinOpKind::And => 10,
+            BinOpKind::Or => 9,
+            BinOpKind::EqualsEquals => 30,
+            BinOpKind::BangEquals => 30,
+            BinOpKind::Increment => 17,
+            BinOpKind::Decrement => 17,
+            BinOpKind::MinusEquals => 17,
+            BinOpKind::PlusEquals => 17,
+        }
+    }
+
+    pub fn associativity(&self) -> BinOpAssociativity {
+        match self.kind {
+            BinOpKind::Power => BinOpAssociativity::Right,
+            _ => BinOpAssociativity::Left,
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BinOpAssociativity {
+    Left,
+    Right,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -231,4 +349,80 @@ pub enum Expr {
     Parenthesized(Parenthesized),
     Call(CallExpr),
     Assign(Assign),
+}
+
+
+impl Expr {
+    pub fn new_unary(operator: UnOperator, expr: Expr, token: Token) -> Self {
+        Expr::Unary(Unary {
+            operator,
+            expr: Box::new(expr),
+            token,
+        })
+    }
+
+    pub fn new_assign(ident: Token, token: Token, value: Expr) -> Self {
+        Expr::Assign(Assign {
+            ident,
+            value: Box::new(value),
+            token,
+        })
+    }
+
+    pub fn new_binary(left: Expr, operator: BinOperator, right: Expr) -> Self {
+        Expr::Binary(Binary {
+            left: Box::new(left),
+            operator: operator.kind,
+            right: Box::new(right),
+        })
+    }
+
+    pub fn new_integer(token: Token, value: i64) -> Self {
+        Expr::Literal(Literal {
+            token,
+            value: LiteralType::Int(value),
+        })
+    }
+
+    pub fn new_rational(token: Token, value: f64) -> Self {
+        Expr::Literal(Literal {
+            token,
+            value: LiteralType::Rational(value),
+        })
+    }
+
+    pub fn new_bool(token: Token, value: bool) -> Self {
+        Expr::Literal(Literal {
+            token,
+            value: LiteralType::Bool(value),
+        })
+    }
+
+    pub fn new_variable(ident: Token, name: String) -> Self {
+        Expr::Variable(Variable {
+            ident: name,
+            token: ident,
+        })
+    }
+
+    pub fn new_call(callee: String, args: Vec<Expr>, token: Token) -> Self {
+        Expr::Call(CallExpr {
+            callee,
+            args,
+            token,
+        })
+    }
+
+    pub fn new_string(token: Token, value: String) -> Self {
+        Expr::Literal(Literal {
+            token,
+            value: LiteralType::String(value),
+        })
+    }
+
+    pub fn new_parenthesized(expr: Expr) -> Self {
+        Expr::Parenthesized(Parenthesized {
+            expr: Box::new(expr),
+        })
+    }
 }

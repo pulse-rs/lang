@@ -1,3 +1,8 @@
 use { println, eprintln } from "std::io";
 
-export fn main(arg: int) -> int {}
+export fn main(arg: int) -> int {
+    let i = 3.14;
+    let j = true;
+
+    println("Hello, world!");
+}

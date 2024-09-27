@@ -20,6 +20,14 @@ impl Token {
     pub fn is_string(&self) -> bool {
         matches!(self.kind, TokenKind::String(_))
     }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        match self.kind {
+            TokenKind::True => Some(true),
+            TokenKind::False => Some(false),
+            _ => unreachable!("Token is not a boolean"),
+        }
+    }
 }
 
 impl Display for TokenKind {
@@ -40,7 +48,6 @@ impl Display for TokenKind {
             TokenKind::String(s) => write!(f, "{}", s),
             TokenKind::Rational(r) => write!(f, "{}", r),
             TokenKind::Integer(i) => write!(f, "{}", i),
-            TokenKind::Boolean(b) => write!(f, "{}", b),
             TokenKind::Fn => write!(f, "fn"),
             TokenKind::Let => write!(f, "let"),
             TokenKind::If => write!(f, "if"),
@@ -110,7 +117,6 @@ pub enum TokenKind {
     String(String),
     Rational(f64),
     Integer(i64),
-    Boolean(bool),
 
     // Keywords
     Fn,

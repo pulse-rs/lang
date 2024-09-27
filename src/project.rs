@@ -91,7 +91,7 @@ impl Project {
 
         let mut parser = Parser::new(self.tokens.clone());
         let ast = parser.parse()?;
-        log::debug!("{:?}", ast);
+        log::debug!("{:#?}", ast);
 
         Ok(())
     }

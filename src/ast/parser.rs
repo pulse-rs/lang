@@ -1,8 +1,7 @@
-use crate::ast::ast::{Ast, Block, FnParam, FunctionType, Stmt, TypeAnnotation};
+use crate::ast::ast::{Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, Expr, FnParam, FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator};
 use crate::lexer::token::{Token, TokenKind};
 use anyhow::Result;
-use crate::error::PulseError::ExpectedToken;
-use crate::lexer::token::TokenKind::Boolean;
+use crate::error::PulseError::{ExpectedToken, UnexpectedToken};
 
 #[derive(Debug)]
 pub struct Parser {
@@ -23,7 +22,9 @@ impl Parser {
         while !self.is_eof() {
             let stmt = self.parse_stmt()?;
 
-            ast.stmts.push(stmt);
+            if let Some(stmt) = stmt {
+                ast.stmts.push(stmt);
+            }
         }
 
         Ok(ast)
@@ -49,8 +50,18 @@ impl Parser {
         self.tokens[self.current].clone()
     }
 
+    pub fn peek_next(&self) -> Token {
+        self.tokens[self.current + 1].clone()
+    }
+
     pub fn is_eof(&self) -> bool {
         self.current >= self.tokens.len() || self.peek().kind == TokenKind::EOF
+    }
+
+    pub fn possible_check(&mut self, kind: TokenKind) {
+        if self.peek().kind == kind {
+            self.consume();
+        }
     }
 
     pub fn expect(&mut self, kind: TokenKind) -> Result<Token> {
@@ -69,17 +80,105 @@ impl Parser {
 }
 
 impl Parser {
-    pub fn parse_stmt(&mut self) -> Result<Stmt> {
+    pub fn parse_stmt(&mut self) -> Result<Option<Stmt>> {
         let token = self.peek();
 
         let stmt = match token.kind {
-            TokenKind::Fn | TokenKind::Export => self.parse_fn(),
-            TokenKind::Use => self.parse_use(),
-            _ => unimplemented!("Token kind: {:?}", token.kind),
+            TokenKind::Fn | TokenKind::Export => Some(self.parse_fn()?),
+            TokenKind::Use => Some(self.parse_use()?),
+            TokenKind::If => Some(self.parse_if()?),
+            TokenKind::Let => Some(self.parse_let(token)?),
+            TokenKind::LeftBrace => {
+                self.consume();
+                let block = self.parse_block()?;
+                self.expect(TokenKind::RightBrace)?;
+                Some(Stmt::Block(block))
+            }
+            TokenKind::Semicolon => {
+                self.consume();
+                None
+            }
+            _ => Some(self.expression_stmt()?)
         };
 
-        stmt
+        Ok(stmt)
     }
+
+    pub fn parse_let(&mut self, let_token: Token) -> Result<Stmt> {
+        self.expect(TokenKind::Let)?;
+        let ident = self.expect(TokenKind::Identifier)?;
+        let type_annotation = self.parse_optional_type_annotation()?;
+        self.expect(TokenKind::Equals)?;
+        let value = self.parse_expr()?;
+        Ok(Stmt::new_let(ident, Box::new(value), type_annotation))
+    }
+
+    pub fn parse_if(&mut self) -> Result<Stmt> {
+        let if_token = self.consume();
+
+        self.possible_check(TokenKind::LeftParen);
+
+        let condition = self.parse_expr()?;
+
+        self.possible_check(TokenKind::RightParen);
+
+        self.expect(TokenKind::LeftBrace)?;
+
+        let body = self.parse_block()?;
+
+        self.expect(TokenKind::RightBrace)?;
+
+        let mut elseif_blocks = vec![];
+        //
+        // while self.peek().kind == TokenKind::Else {
+        //     let else_token = self.consume();
+        //
+        //     if self.peek().kind == TokenKind::If {
+        //         let if_token = self.consume();
+        //         self.possible_check(TokenKind::LeftParen);
+        //
+        //         let condition = self.parse_expr()?;
+        //         self.possible_check(TokenKind::RightParen);
+        //
+        //         self.expect(TokenKind::LeftBrace)?;
+        //         let body = self.parse_block()?;
+        //         self.expect(TokenKind::RightBrace)?;
+        //
+        //         elseif_blocks.push((if_token, condition, body));
+        //     } else {
+        //         self.expect(TokenKind::LeftBrace)?;
+        //
+        //         let body = self.parse_block()?;
+        //
+        //         self.expect(TokenKind::RightBrace)?;
+        //
+        //         elseif_blocks.push((else_token, condition.clone(), body));
+        //     }
+        // }
+
+        let else_block = if self.peek().kind == TokenKind::Else {
+            let else_token = self.consume();
+
+            self.expect(TokenKind::LeftBrace)?;
+
+            let body = self.parse_block()?;
+
+            self.expect(TokenKind::RightBrace)?;
+
+            Some(body)
+        } else {
+            None
+        };
+
+        Ok(Stmt::new_if(
+            if_token,
+            condition.into(),
+            body,
+            elseif_blocks.into(),
+            else_block,
+        ))
+    }
+
 
     pub fn parse_use(&mut self) -> Result<Stmt> {
         let use_token = self.consume();
@@ -150,7 +249,9 @@ impl Parser {
         while self.peek().kind != TokenKind::RightBrace && !self.is_eof() {
             let stmt = self.parse_stmt()?;
 
-            stmts.push(stmt);
+            if let Some(stmt) = stmt {
+                stmts.push(stmt);
+            }
         }
 
         Ok(Block { stmts })
@@ -209,5 +310,172 @@ impl Parser {
             exported,
             return_type,
         ))
+    }
+}
+
+impl Parser {
+    pub fn parse_expr(&mut self) -> Result<Expr> {
+        self.parse_assignment()
+    }
+
+    pub fn expression_stmt(&mut self) -> Result<Stmt> {
+        let expr = self.parse_expr()?;
+
+        self.possible_check(TokenKind::Semicolon);
+
+        Ok(expr.into())
+    }
+
+    pub fn parse_binary_expression(&mut self) -> Result<Expr> {
+        let left = self.parse_unary_expression()?;
+        self.parse_binary_expression_recurse(left, 0)
+    }
+
+    fn parse_binary_operator(&mut self) -> Option<BinOperator> {
+        let token = self.peek();
+        let kind = match token.kind {
+            TokenKind::Plus => Some(BinOpKind::Plus),
+            TokenKind::Minus => Some(BinOpKind::Minus),
+            TokenKind::Asterisk => Some(BinOpKind::Multiply),
+            TokenKind::Slash => Some(BinOpKind::Divide),
+            TokenKind::Ampersand => Some(BinOpKind::BitwiseAnd),
+            TokenKind::Pipe => Some(BinOpKind::BitwiseOr),
+            TokenKind::Caret => Some(BinOpKind::BitwiseXor),
+            TokenKind::DoubleAsterisk => Some(BinOpKind::Power),
+            TokenKind::EqualsEquals => Some(BinOpKind::Equals),
+            TokenKind::BangEquals => Some(BinOpKind::NotEquals),
+            TokenKind::LessThan => Some(BinOpKind::LessThan),
+            TokenKind::LessThanEquals => Some(BinOpKind::LessThanOrEqual),
+            TokenKind::GreaterThan => Some(BinOpKind::GreaterThan),
+            TokenKind::GreaterThanEquals => Some(BinOpKind::GreaterThanOrEqual),
+            TokenKind::Percent => Some(BinOpKind::Modulo),
+            TokenKind::And => Some(BinOpKind::And),
+            TokenKind::Or => Some(BinOpKind::Or),
+            TokenKind::Increment => Some(BinOpKind::Increment),
+            TokenKind::Decrement => Some(BinOpKind::Decrement),
+            TokenKind::MinusEquals => Some(BinOpKind::MinusEquals),
+            TokenKind::PlusEquals => Some(BinOpKind::PlusEquals),
+            _ => None,
+        };
+        kind.map(|kind| BinOperator::new(kind, token.clone()))
+    }
+
+    pub fn parse_binary_expression_recurse(&mut self, mut left: Expr, precedence: u8) -> Result<Expr> {
+        while let Some(operator) = self.parse_binary_operator() {
+            let operator_precedence = operator.precedence();
+            if operator_precedence < precedence {
+                break;
+            }
+            self.consume();
+            let mut right = self.parse_unary_expression()?;
+
+            while let Some(inner_operator) = self.parse_binary_operator() {
+                let greater_precedence = inner_operator.precedence() > operator.precedence();
+                let equal_precedence = inner_operator.precedence() == operator.precedence();
+                if !(greater_precedence
+                    || equal_precedence
+                    && inner_operator.associativity() == BinOpAssociativity::Right)
+                {
+                    break;
+                }
+
+                right = self.parse_binary_expression_recurse(
+                    right,
+                    std::cmp::max(operator.precedence(), inner_operator.precedence()),
+                )?;
+            }
+            left = Expr::new_binary(left, operator, right);
+        }
+        Ok(left)
+    }
+
+    pub fn parse_unary_operator(&mut self) -> Option<UnOperator> {
+        let token = self.peek();
+        let kind = match token.kind {
+            TokenKind::Minus => Some(UnOpKind::Minus),
+            TokenKind::Tilde => Some(UnOpKind::BitwiseNot),
+            _ => None,
+        };
+        kind.map(|kind| UnOperator::new(kind, token.clone()))
+    }
+
+    pub fn parse_unary_expression(&mut self) -> Result<Expr> {
+        if let Some(operator) = self.parse_unary_operator() {
+            let token = self.consume();
+            let operand = self.parse_unary_expression();
+            return Ok(Expr::new_unary(operator, operand?, token));
+        }
+        self.parse_primary_expression()
+    }
+
+    pub fn parse_primary_expression(&mut self) -> Result<Expr> {
+        let token = self.consume();
+
+        match &token.kind.clone() {
+            TokenKind::Integer(int) => Ok(Expr::new_integer(token, *int)),
+            TokenKind::Rational(rational) => Ok(Expr::new_rational(token, *rational)),
+            TokenKind::True | TokenKind::False => Ok(Expr::new_bool(token.clone(), token.as_bool().unwrap())),
+            TokenKind::Identifier => {
+                log::debug!("Parsing identifier: {}", token.literal());
+                if self.peek().kind == TokenKind::LeftParen {
+                    self.parse_call_expr(token)
+                } else {
+                    Ok(Expr::new_variable(token.clone(), token.literal()))
+                }
+            }
+            TokenKind::LeftParen => {
+                let expr = self.parse_expr()?;
+
+                Ok(Expr::new_parenthesized(expr))
+            }
+            TokenKind::String(s) => Ok(Expr::new_string(token.clone(), s.clone())),
+            _ => Err(UnexpectedToken(
+                token.kind.to_string(),
+                token.span.clone(),
+            ).into()),
+        }
+    }
+
+    pub fn parse_call_expr(&mut self, callee: Token) -> Result<Expr> {
+        self.expect(TokenKind::LeftParen)?;
+
+        let mut args = vec![];
+
+        if self.peek().kind != TokenKind::RightParen {
+            while self.peek().kind != TokenKind::RightParen && !self.is_eof() {
+                let arg = self.parse_expr()?;
+
+                args.push(arg);
+
+                if self.peek().kind != TokenKind::RightParen {
+                    self.expect(TokenKind::Comma)?;
+                }
+            }
+        }
+
+        self.expect(TokenKind::RightParen)?;
+
+        Ok(Expr::new_call(callee.literal(), args, callee))
+    }
+
+    pub fn parse_optional_type_annotation(&mut self) -> Result<Option<TypeAnnotation>> {
+        if self.peek().kind == TokenKind::Colon {
+            Ok(Some(self.parse_type_annotation()?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn parse_assignment(&mut self) -> Result<Expr> {
+        log::debug!("Parsing assignment");
+        if self.peek().kind == TokenKind::Identifier && self.peek_next().kind == TokenKind::Equals {
+            let ident = self.consume();
+            let equals = self.consume();
+            let value = self.parse_expr()?;
+
+            Ok(Expr::new_assign(ident, equals, value))
+        } else {
+            Ok(self.parse_binary_expression()?)
+        }
     }
 }

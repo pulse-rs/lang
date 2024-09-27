@@ -17,4 +17,6 @@ pub enum PulseError {
     InvalidToken(String, TextSpan),
     #[error("Expected {0}.")]
     ExpectedToken(String, String, TextSpan),
+    #[error("Unexpected token: {0}")]
+    UnexpectedToken(String, TextSpan),
 }

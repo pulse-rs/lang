@@ -97,7 +97,7 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
             hint: None,
             content: None,
         },
-        PulseError::InvalidToken(token, span) => Diagnostic {
+        PulseError::InvalidToken(token, span) | PulseError::UnexpectedToken(token, span) => Diagnostic {
             title: err_str,
             text: None,
             level: Level::Error,
