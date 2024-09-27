@@ -75,6 +75,13 @@ impl Stmt {
             type_annotation,
         })
     }
+
+    pub fn new_return(return_token: Token, expr: Option<Box<Expr>>) -> Self {
+        Stmt::Return(Return {
+            return_token,
+            expr,
+        })
+    }
 }
 
 impl Stmt {

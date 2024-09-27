@@ -4,9 +4,11 @@ export fn main(arg: int) -> int {
     let i = 3.14;
     let j = true;
 
-    if j {
+    if j && i > 3.0 {
         println("Hello, world!");
     } else {
         eprintln("Goodbye, world!");
     }
+
+    return 0;
 }

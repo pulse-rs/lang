@@ -88,13 +88,14 @@ impl Parser {
             TokenKind::Fn | TokenKind::Export => Some(self.parse_fn()?),
             TokenKind::Use => Some(self.parse_use()?),
             TokenKind::If => Some(self.parse_if()?),
-            TokenKind::Let => Some(self.parse_let(token)?),
+            TokenKind::Let => Some(self.parse_let()?),
             TokenKind::LeftBrace => {
                 self.consume();
                 let block = self.parse_block()?;
                 self.expect(TokenKind::RightBrace)?;
                 Some(Stmt::Block(block))
             }
+            TokenKind::Return => self.parse_return()?,
             TokenKind::Semicolon => {
                 self.consume();
                 None
@@ -105,7 +106,20 @@ impl Parser {
         Ok(stmt)
     }
 
-    pub fn parse_let(&mut self, let_token: Token) -> Result<Stmt> {
+    pub fn parse_return(&mut self) -> Result<Option<Stmt>> {
+        let return_token = self.consume();
+        let value = if self.peek().kind != TokenKind::Semicolon {
+            Some(Box::new(self.parse_expr()?))
+        } else {
+            None
+        };
+
+        self.possible_check(TokenKind::Semicolon);
+
+        Ok(Some(Stmt::new_return(return_token, value)))
+    }
+
+    pub fn parse_let(&mut self) -> Result<Stmt> {
         self.expect(TokenKind::Let)?;
         let ident = self.expect(TokenKind::Identifier)?;
         let type_annotation = self.parse_optional_type_annotation()?;
@@ -158,7 +172,7 @@ impl Parser {
 
                 self.expect(TokenKind::RightBrace)?;
 
-                elseif_blocks.push(ElseBlock {
+                else_block = Some(ElseBlock {
                     condition: Box::new(condition.clone()),
                     block: body,
                     else_if: false,
