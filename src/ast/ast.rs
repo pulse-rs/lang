@@ -58,7 +58,7 @@ impl Stmt {
         })
     }
 
-    pub fn new_if(if_token: Token, condition: Box<Expr>, then_block: Block, else_ifs: Vec<ElseIf>, else_block: Option<Block>) -> Self {
+    pub fn new_if(if_token: Token, condition: Box<Expr>, then_block: Block, else_ifs: Vec<ElseBlock>, else_block: Option<ElseBlock>) -> Self {
         Stmt::If(If {
             if_token,
             condition,
@@ -125,15 +125,15 @@ pub struct If {
     pub if_token: Token,
     pub condition: Box<Expr>,
     pub then_block: Block,
-    pub else_ifs: Vec<ElseIf>,
-    pub else_block: Option<Block>,
+    pub else_ifs: Vec<ElseBlock>,
+    pub else_block: Option<ElseBlock>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ElseIf {
-    pub else_if_token: Token,
+pub struct ElseBlock {
     pub condition: Box<Expr>,
     pub block: Block,
+    pub else_if: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

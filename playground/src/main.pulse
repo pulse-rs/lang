@@ -4,5 +4,9 @@ export fn main(arg: int) -> int {
     let i = 3.14;
     let j = true;
 
-    println("Hello, world!");
+    if j {
+        println("Hello, world!");
+    } else {
+        eprintln("Goodbye, world!");
+    }
 }

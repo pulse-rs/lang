@@ -1,4 +1,5 @@
-use crate::ast::ast::{Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, Expr, FnParam, FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator};
+use std::hint::black_box;
+use crate::ast::ast::{Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, ElseBlock, Expr, FnParam, FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator};
 use crate::lexer::token::{Token, TokenKind};
 use anyhow::Result;
 use crate::error::PulseError::{ExpectedToken, UnexpectedToken};
@@ -129,46 +130,41 @@ impl Parser {
         self.expect(TokenKind::RightBrace)?;
 
         let mut elseif_blocks = vec![];
-        //
-        // while self.peek().kind == TokenKind::Else {
-        //     let else_token = self.consume();
-        //
-        //     if self.peek().kind == TokenKind::If {
-        //         let if_token = self.consume();
-        //         self.possible_check(TokenKind::LeftParen);
-        //
-        //         let condition = self.parse_expr()?;
-        //         self.possible_check(TokenKind::RightParen);
-        //
-        //         self.expect(TokenKind::LeftBrace)?;
-        //         let body = self.parse_block()?;
-        //         self.expect(TokenKind::RightBrace)?;
-        //
-        //         elseif_blocks.push((if_token, condition, body));
-        //     } else {
-        //         self.expect(TokenKind::LeftBrace)?;
-        //
-        //         let body = self.parse_block()?;
-        //
-        //         self.expect(TokenKind::RightBrace)?;
-        //
-        //         elseif_blocks.push((else_token, condition.clone(), body));
-        //     }
-        // }
+        let mut else_block: Option<ElseBlock> = None;
 
-        let else_block = if self.peek().kind == TokenKind::Else {
-            let else_token = self.consume();
+        while self.peek().kind == TokenKind::Else {
+            self.consume();
 
-            self.expect(TokenKind::LeftBrace)?;
+            if self.peek().kind == TokenKind::If {
+                let if_token = self.consume();
+                self.possible_check(TokenKind::LeftParen);
 
-            let body = self.parse_block()?;
+                let condition = self.parse_expr()?;
+                self.possible_check(TokenKind::RightParen);
 
-            self.expect(TokenKind::RightBrace)?;
+                self.expect(TokenKind::LeftBrace)?;
+                let body = self.parse_block()?;
+                self.expect(TokenKind::RightBrace)?;
 
-            Some(body)
-        } else {
-            None
-        };
+                elseif_blocks.push(ElseBlock {
+                    condition: Box::new(condition),
+                    block: body,
+                    else_if: true,
+                });
+            } else {
+                self.expect(TokenKind::LeftBrace)?;
+
+                let body = self.parse_block()?;
+
+                self.expect(TokenKind::RightBrace)?;
+
+                elseif_blocks.push(ElseBlock {
+                    condition: Box::new(condition.clone()),
+                    block: body,
+                    else_if: false,
+                });
+            }
+        }
 
         Ok(Stmt::new_if(
             if_token,
