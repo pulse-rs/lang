@@ -1,14 +1,19 @@
 use { println, eprintln } from "std::io";
 
+export fn add(a: float, b: float) -> float {
+    return a + b;
+}
+
 export fn main(arg: int) -> int {
     let i = 3.14;
     let j = true;
 
-    if j && i > 3.0 {
-        println("Hello, world!");
+    if j {
+        i = add(i, 2.0);
     } else {
         eprintln("Goodbye, world!");
     }
 
     return 0;
 }
+

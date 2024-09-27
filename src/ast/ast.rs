@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
+use crate::lexer::span::TextSpan;
 use crate::lexer::token::Token;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -11,6 +12,10 @@ impl Ast {
     pub fn new() -> Self {
         Self { stmts: vec![] }
     }
+}
+
+pub trait GetSpan {
+    fn span(&self) -> TextSpan;
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -164,7 +169,7 @@ pub struct Return {
 #[derive(Clone, Debug, PartialEq)]
 pub enum LiteralType {
     Int(i64),
-    Rational(f64),
+    Float(f64),
     String(String),
     Bool(bool),
     Null,
@@ -217,6 +222,14 @@ pub struct Binary {
     pub right: Box<Expr>,
 }
 
+impl GetSpan for Binary {
+    fn span(&self) -> TextSpan {
+        let left = self.left.span();
+        let right = self.right.span();
+
+        TextSpan::combine(vec![left, right])
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
@@ -282,8 +295,8 @@ impl Display for UnOpKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct UnOperator {
-    pub(crate) kind: UnOpKind,
-    token: Token,
+    pub kind: UnOpKind,
+    pub token: Token,
 }
 
 impl UnOperator {
@@ -358,6 +371,30 @@ pub enum Expr {
     Assign(Assign),
 }
 
+impl GetSpan for Expr {
+    fn span(&self) -> TextSpan {
+        match &self {
+            Expr::Literal(l) => l.clone().token.span,
+            Expr::Binary(b) => {
+                let left = b.left.span();
+                let right = b.right.span();
+
+                TextSpan::combine(vec![left, right])
+            }
+            Expr::Unary(u) => u.clone().token.span,
+            Expr::Variable(v) => v.clone().token.span,
+            Expr::Logical(l) => l.clone().token.span,
+            Expr::Parenthesized(p) => p.expr.span(),
+            Expr::Call(c) => c.clone().token.span,
+            Expr::Assign(a) => {
+                let ident = a.clone().ident.span;
+                let value = a.value.span();
+
+                TextSpan::combine(vec![ident, value])
+            }
+        }
+    }
+}
 
 impl Expr {
     pub fn new_unary(operator: UnOperator, expr: Expr, token: Token) -> Self {
@@ -391,10 +428,10 @@ impl Expr {
         })
     }
 
-    pub fn new_rational(token: Token, value: f64) -> Self {
+    pub fn new_float(token: Token, value: f64) -> Self {
         Expr::Literal(Literal {
             token,
-            value: LiteralType::Rational(value),
+            value: LiteralType::Float(value),
         })
     }
 

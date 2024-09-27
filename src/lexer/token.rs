@@ -46,7 +46,7 @@ impl Display for TokenKind {
             TokenKind::Arrow => write!(f, "->"),
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::String(s) => write!(f, "{}", s),
-            TokenKind::Rational(r) => write!(f, "{}", r),
+            TokenKind::Float(r) => write!(f, "{}", r),
             TokenKind::Integer(i) => write!(f, "{}", i),
             TokenKind::Fn => write!(f, "fn"),
             TokenKind::Let => write!(f, "let"),
@@ -115,7 +115,7 @@ pub enum TokenKind {
     // Literals
     Identifier,
     String(String),
-    Rational(f64),
+    Float(f64),
     Integer(i64),
 
     // Keywords

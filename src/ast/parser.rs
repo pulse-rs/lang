@@ -2,6 +2,7 @@ use std::hint::black_box;
 use crate::ast::ast::{Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, ElseBlock, Expr, FnParam, FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator};
 use crate::lexer::token::{Token, TokenKind};
 use anyhow::Result;
+use log::debug;
 use crate::error::PulseError::{ExpectedToken, UnexpectedToken};
 
 #[derive(Debug)]
@@ -107,6 +108,7 @@ impl Parser {
     }
 
     pub fn parse_return(&mut self) -> Result<Option<Stmt>> {
+        debug!("Parsing return statement");
         let return_token = self.consume();
         let value = if self.peek().kind != TokenKind::Semicolon {
             Some(Box::new(self.parse_expr()?))
@@ -120,6 +122,7 @@ impl Parser {
     }
 
     pub fn parse_let(&mut self) -> Result<Stmt> {
+        debug!("Parsing let statement");
         self.expect(TokenKind::Let)?;
         let ident = self.expect(TokenKind::Identifier)?;
         let type_annotation = self.parse_optional_type_annotation()?;
@@ -129,6 +132,7 @@ impl Parser {
     }
 
     pub fn parse_if(&mut self) -> Result<Stmt> {
+        debug!("Parsing if statement");
         let if_token = self.consume();
 
         self.possible_check(TokenKind::LeftParen);
@@ -191,6 +195,7 @@ impl Parser {
 
 
     pub fn parse_use(&mut self) -> Result<Stmt> {
+        debug!("Parsing use statement");
         let use_token = self.consume();
 
         let mut items = vec![];
@@ -232,6 +237,7 @@ impl Parser {
     }
 
     pub fn parse_type_annotation(&mut self) -> Result<TypeAnnotation> {
+        debug!("Parsing type annotation");
         let colon = self.expect(TokenKind::Colon)?;
         let type_name = self.expect(TokenKind::Identifier)?;
 
@@ -239,6 +245,7 @@ impl Parser {
     }
 
     pub fn parse_return_type(&mut self) -> Result<Option<FunctionType>> {
+        debug!("Parsing return type");
         if self.peek().kind == TokenKind::Identifier {
             Err(ExpectedToken(
                 "arrow".to_string(),
@@ -254,12 +261,14 @@ impl Parser {
     }
 
     pub fn parse_block(&mut self) -> Result<Block> {
+        debug!("Parsing block");
         let mut stmts = vec![];
 
         while self.peek().kind != TokenKind::RightBrace && !self.is_eof() {
             let stmt = self.parse_stmt()?;
 
             if let Some(stmt) = stmt {
+                debug!("Adding statement to block");
                 stmts.push(stmt);
             }
         }
@@ -268,6 +277,7 @@ impl Parser {
     }
 
     pub fn parse_fn(&mut self) -> Result<Stmt> {
+        debug!("Parsing function");
         let mut exported = false;
         let fn_token = if self.peek().kind == TokenKind::Export {
             self.consume();
@@ -293,10 +303,13 @@ impl Parser {
 
         if self.peek().kind != TokenKind::RightParen {
             while self.peek().kind != TokenKind::RightParen && !self.is_eof() {
+                self.possible_check(TokenKind::Comma);
+
                 let param = self.consume();
+                let type_annotation = self.parse_type_annotation()?;
 
                 params.push(FnParam {
-                    type_annotation: self.parse_type_annotation()?,
+                    type_annotation,
                     ident: param,
                 });
             }
@@ -423,7 +436,7 @@ impl Parser {
 
         match &token.kind.clone() {
             TokenKind::Integer(int) => Ok(Expr::new_integer(token, *int)),
-            TokenKind::Rational(rational) => Ok(Expr::new_rational(token, *rational)),
+            TokenKind::Float(float) => Ok(Expr::new_float(token, *float)),
             TokenKind::True | TokenKind::False => Ok(Expr::new_bool(token.clone(), token.as_bool().unwrap())),
             TokenKind::Identifier => {
                 log::debug!("Parsing identifier: {}", token.literal());

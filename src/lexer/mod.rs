@@ -138,7 +138,7 @@ impl Lexer {
                 let number = self.consume_number();
                 match number.0 {
                     NumberType::Integer => TokenKind::Integer(number.1.parse()?),
-                    NumberType::Rational => TokenKind::Rational(number.1.parse()?),
+                    NumberType::Float => TokenKind::Float(number.1.parse()?),
                 }
             } else if self.is_identifier_start(c) {
                 let ident = self.consume_identifier();
@@ -188,6 +188,7 @@ impl Lexer {
                         }
                     }
                     '+' => {
+                        self.consume();
                         if self.match_next('+') {
                             TokenKind::Increment
                         } else if self.match_next('=') {
@@ -308,7 +309,7 @@ impl Lexer {
         ident
     }
 
-    // Can be rational or integer
+    // Can be float or integer
     pub fn consume_number(&mut self) -> (NumberType, String) {
         let mut number = String::new();
         let mut number_type = NumberType::Integer;
@@ -318,7 +319,7 @@ impl Lexer {
                 number.push(c);
             } else if c == '.' {
                 number.push(c);
-                number_type = NumberType::Rational;
+                number_type = NumberType::Float;
             } else {
                 break;
             }
@@ -332,5 +333,5 @@ impl Lexer {
 #[derive(Debug)]
 pub enum NumberType {
     Integer,
-    Rational,
+    Float,
 }

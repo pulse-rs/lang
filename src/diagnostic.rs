@@ -97,7 +97,7 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
             hint: None,
             content: None,
         },
-        PulseError::InvalidToken(token, span) | PulseError::UnexpectedToken(token, span) => Diagnostic {
+        PulseError::InvalidToken(_, span) | PulseError::SemanticError(_, span) | PulseError::UnexpectedToken(_, span) => Diagnostic {
             title: err_str,
             text: None,
             level: Level::Error,
@@ -112,6 +112,14 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
             location: Some(span.clone()),
             hint: Some(hint.clone()),
             content,
+        },
+        PulseError::ResolverError(_) => Diagnostic {
+            title: err_str,
+            text: None,
+            level: Level::Error,
+            location: None,
+            hint: None,
+            content: None,
         },
         _ => {
             log::error!("{:?}", err);

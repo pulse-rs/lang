@@ -3,11 +3,13 @@ use std::{env, fs};
 use std::fmt::format;
 use std::path::PathBuf;
 use anyhow::Result;
+use log::debug;
 use crate::ast::parser::Parser;
-use crate::error::PulseError::{ProjectNotFound, InvalidProjectStructure, MultipleEntryPoints};
+use crate::error::PulseError::{ProjectNotFound, InvalidProjectStructure, MultipleEntryPoints, SemanticError};
 use crate::fs::find_nearest_file;
 use crate::lexer::Lexer;
 use crate::lexer::token::Token;
+use crate::resolver::Resolver;
 
 #[derive(Debug, PartialEq)]
 pub enum ProjectType {
@@ -91,7 +93,10 @@ impl Project {
 
         let mut parser = Parser::new(self.tokens.clone());
         let ast = parser.parse()?;
-        log::debug!("{:#?}", ast);
+
+        let mut resolver = Resolver::new();
+
+        resolver.resolve_ast(&ast)?;
 
         Ok(())
     }

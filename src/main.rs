@@ -19,7 +19,8 @@ pub mod project;
 pub mod error;
 mod lexer;
 mod diagnostic;
-mod ast;
+pub mod ast;
+pub mod resolver;
 
 fn main() -> Result<()> {
     setup_panic_handler();
