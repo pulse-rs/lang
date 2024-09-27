@@ -1,7 +1,6 @@
-use std::fs;
-use std::path::PathBuf;
-use anyhow::{Result, Context};
 use crate::error::PulseError;
+use anyhow::{Context, Result};
+use std::{fs, path::PathBuf};
 
 pub fn init_command(name: Option<String>) -> Result<()> {
     let project_name = name.unwrap_or_else(|| "pulse_project".to_string());
@@ -28,8 +27,7 @@ pub fn init_command(name: Option<String>) -> Result<()> {
 
     for (file, content) in files {
         let file_path = path.join(file);
-        fs::write(&file_path, content)
-            .with_context(|| format!("Failed to write file {}", file))?;
+        fs::write(&file_path, content).with_context(|| format!("Failed to write file {}", file))?;
         log::info!("Created file: {:?}", file_path);
     }
 

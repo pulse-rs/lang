@@ -1,15 +1,15 @@
-use std::cmp::PartialEq;
-use std::{env, fs};
-use std::fmt::format;
-use std::path::PathBuf;
+use crate::{
+    ast::parser::Parser,
+    error::PulseError::{
+        InvalidProjectStructure, MultipleEntryPoints, ProjectNotFound, SemanticError,
+    },
+    fs::find_nearest_file,
+    lexer::{token::Token, Lexer},
+    resolver::Resolver,
+};
 use anyhow::Result;
 use log::debug;
-use crate::ast::parser::Parser;
-use crate::error::PulseError::{ProjectNotFound, InvalidProjectStructure, MultipleEntryPoints, SemanticError};
-use crate::fs::find_nearest_file;
-use crate::lexer::Lexer;
-use crate::lexer::token::Token;
-use crate::resolver::Resolver;
+use std::{cmp::PartialEq, env, fmt::format, fs, path::PathBuf};
 
 #[derive(Debug, PartialEq)]
 pub enum ProjectType {

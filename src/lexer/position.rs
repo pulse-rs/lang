@@ -9,7 +9,11 @@ pub struct Position {
 
 impl Position {
     pub fn new(line: u32, column: u32, index: usize) -> Self {
-        Self { line, column, index }
+        Self {
+            line,
+            column,
+            index,
+        }
     }
 
     pub fn increment_line(&mut self) {

@@ -9,7 +9,11 @@ pub struct TextSpan {
 
 impl TextSpan {
     pub fn new(start: Position, end: Position, literal: String) -> Self {
-        Self { start, end, literal }
+        Self {
+            start,
+            end,
+            literal,
+        }
     }
 
     pub fn combine(mut spans: Vec<TextSpan>) -> TextSpan {
@@ -39,6 +43,10 @@ impl TextSpan {
 
 impl std::fmt::Debug for TextSpan {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\" ({}:{})", self.literal, self.start.line, self.start.column)
+        write!(
+            f,
+            "\"{}\" ({}:{})",
+            self.literal, self.start.line, self.start.column
+        )
     }
 }

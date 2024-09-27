@@ -1,6 +1,6 @@
+use anyhow::Result;
 use colored::Colorize;
 use std::path::{Path, PathBuf};
-use anyhow::Result;
 
 pub fn setup_panic_handler() {
     std::panic::set_hook(Box::new(|info| {

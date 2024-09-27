@@ -1,9 +1,14 @@
-use std::hint::black_box;
-use crate::ast::ast::{Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, ElseBlock, Expr, FnParam, FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator};
-use crate::lexer::token::{Token, TokenKind};
+use crate::{
+    ast::ast::{
+        Ast, BinOpAssociativity, BinOpKind, BinOperator, Block, ElseBlock, Expr, FnParam,
+        FunctionType, Stmt, TypeAnnotation, UnOpKind, UnOperator,
+    },
+    error::PulseError::{ExpectedToken, UnexpectedToken},
+    lexer::token::{Token, TokenKind},
+};
 use anyhow::Result;
 use log::debug;
-use crate::error::PulseError::{ExpectedToken, UnexpectedToken};
+use std::hint::black_box;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -40,13 +45,11 @@ impl Parser {
         self.previous()
     }
 
-
     pub fn previous(&self) -> Token {
         assert!(self.current > 0);
 
         self.tokens[self.current - 1].clone()
     }
-
 
     pub fn peek(&self) -> Token {
         self.tokens[self.current].clone()
@@ -76,7 +79,8 @@ impl Parser {
                 kind.to_string(),
                 format!("Expected token of kind: {}", kind),
                 token.span.clone(),
-            ).into())
+            )
+            .into())
         }
     }
 }
@@ -101,7 +105,7 @@ impl Parser {
                 self.consume();
                 None
             }
-            _ => Some(self.expression_stmt()?)
+            _ => Some(self.expression_stmt()?),
         };
 
         Ok(stmt)
@@ -193,7 +197,6 @@ impl Parser {
         ))
     }
 
-
     pub fn parse_use(&mut self) -> Result<Stmt> {
         debug!("Parsing use statement");
         let use_token = self.consume();
@@ -225,15 +228,11 @@ impl Parser {
                 "string".to_string(),
                 "Expected string that is valid module or file".to_string(),
                 self.peek().span.clone(),
-            ).into());
+            )
+            .into());
         };
 
-
-        Ok(Stmt::new_use(
-            use_token,
-            from,
-            items,
-        ))
+        Ok(Stmt::new_use(use_token, from, items))
     }
 
     pub fn parse_type_annotation(&mut self) -> Result<TypeAnnotation> {
@@ -251,7 +250,8 @@ impl Parser {
                 "arrow".to_string(),
                 "Expected arrow".to_string(),
                 self.peek().span.clone(),
-            ).into())
+            )
+            .into())
         } else {
             let arrow = self.consume();
             let type_name = self.expect(TokenKind::Identifier)?;
@@ -291,7 +291,8 @@ impl Parser {
                     "function".to_string(),
                     "You can only export functions".to_string(),
                     self.peek().span.clone(),
-                ).into());
+                )
+                .into());
             }
         } else {
             self.consume()
@@ -383,7 +384,11 @@ impl Parser {
         kind.map(|kind| BinOperator::new(kind, token.clone()))
     }
 
-    pub fn parse_binary_expression_recurse(&mut self, mut left: Expr, precedence: u8) -> Result<Expr> {
+    pub fn parse_binary_expression_recurse(
+        &mut self,
+        mut left: Expr,
+        precedence: u8,
+    ) -> Result<Expr> {
         while let Some(operator) = self.parse_binary_operator() {
             let operator_precedence = operator.precedence();
             if operator_precedence < precedence {
@@ -397,7 +402,7 @@ impl Parser {
                 let equal_precedence = inner_operator.precedence() == operator.precedence();
                 if !(greater_precedence
                     || equal_precedence
-                    && inner_operator.associativity() == BinOpAssociativity::Right)
+                        && inner_operator.associativity() == BinOpAssociativity::Right)
                 {
                     break;
                 }
@@ -437,7 +442,9 @@ impl Parser {
         match &token.kind.clone() {
             TokenKind::Integer(int) => Ok(Expr::new_integer(token, *int)),
             TokenKind::Float(float) => Ok(Expr::new_float(token, *float)),
-            TokenKind::True | TokenKind::False => Ok(Expr::new_bool(token.clone(), token.as_bool().unwrap())),
+            TokenKind::True | TokenKind::False => {
+                Ok(Expr::new_bool(token.clone(), token.as_bool().unwrap()))
+            }
             TokenKind::Identifier => {
                 log::debug!("Parsing identifier: {}", token.literal());
                 if self.peek().kind == TokenKind::LeftParen {
@@ -452,10 +459,7 @@ impl Parser {
                 Ok(Expr::new_parenthesized(expr))
             }
             TokenKind::String(s) => Ok(Expr::new_string(token.clone(), s.clone())),
-            _ => Err(UnexpectedToken(
-                token.kind.to_string(),
-                token.span.clone(),
-            ).into()),
+            _ => Err(UnexpectedToken(token.kind.to_string(), token.span.clone()).into()),
         }
     }
 

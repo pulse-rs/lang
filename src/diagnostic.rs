@@ -1,8 +1,7 @@
+use crate::{error::PulseError, lexer::span::TextSpan};
 use colored::Colorize;
 use log::Level;
 use std::io::{BufWriter, Stderr, Write};
-use crate::error::PulseError;
-use crate::lexer::span::TextSpan;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Diagnostic {
@@ -23,7 +22,7 @@ impl Diagnostic {
             ": ".dimmed(),
             self.title
         )
-            .expect("Error writing level");
+        .expect("Error writing level");
 
         if let Some(location) = &self.location {
             if let Some(content) = &self.content {
@@ -81,7 +80,10 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
 
     let err_str = err.to_string();
     let diagnostic = match err {
-        PulseError::ProjectNotFound | PulseError::ProjectAlreadyExists | PulseError::InvalidProjectStructure | PulseError::MultipleEntryPoints => Diagnostic {
+        PulseError::ProjectNotFound
+        | PulseError::ProjectAlreadyExists
+        | PulseError::InvalidProjectStructure
+        | PulseError::MultipleEntryPoints => Diagnostic {
             title: err_str,
             text: None,
             level: Level::Error,
@@ -97,7 +99,9 @@ pub fn print_diagnostic(err: anyhow::Error, content: Option<String>) {
             hint: None,
             content: None,
         },
-        PulseError::InvalidToken(_, span) | PulseError::SemanticError(_, span) | PulseError::UnexpectedToken(_, span) => Diagnostic {
+        PulseError::InvalidToken(_, span)
+        | PulseError::SemanticError(_, span)
+        | PulseError::UnexpectedToken(_, span) => Diagnostic {
             title: err_str,
             text: None,
             level: Level::Error,

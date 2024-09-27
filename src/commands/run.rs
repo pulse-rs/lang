@@ -1,6 +1,5 @@
+use crate::{diagnostic::print_diagnostic, project::Project};
 use anyhow::Result;
-use crate::diagnostic::print_diagnostic;
-use crate::project::{Project};
 
 pub fn run_command() -> Result<()> {
     let mut project = Project::find_project()?;

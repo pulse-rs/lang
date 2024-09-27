@@ -1,12 +1,16 @@
-use crate::lexer::position::Position;
-use crate::lexer::token::{Token, TokenKind};
+use crate::{
+    error::PulseError::InvalidToken,
+    lexer::{
+        position::Position,
+        span::TextSpan,
+        token::{Token, TokenKind},
+    },
+};
 use anyhow::Result;
-use crate::error::PulseError::InvalidToken;
-use crate::lexer::span::TextSpan;
 
-pub mod token;
-pub mod span;
 pub mod position;
+pub mod span;
+pub mod token;
 
 pub struct Lexer {
     pub source: String,
@@ -118,7 +122,6 @@ impl Lexer {
 
         Ok(str)
     }
-
 
     pub fn next_token(&mut self) -> Result<Option<Token>> {
         if let Some(c) = self.current() {
@@ -269,7 +272,11 @@ impl Lexer {
                     }
                     _ => {
                         self.consume();
-                        return Err(InvalidToken(c.to_string(), TextSpan::new(start_pos, self.position, c.to_string())).into());
+                        return Err(InvalidToken(
+                            c.to_string(),
+                            TextSpan::new(start_pos, self.position, c.to_string()),
+                        )
+                        .into());
                     }
                 };
 
@@ -279,7 +286,10 @@ impl Lexer {
 
             let end_pos = self.position;
             let literal = self.source[start_pos.index..end_pos.index].to_string();
-            Ok(Some(Token::new(kind, TextSpan::new(start_pos, end_pos, literal))))
+            Ok(Some(Token::new(
+                kind,
+                TextSpan::new(start_pos, end_pos, literal),
+            )))
         } else {
             Ok(None)
         }

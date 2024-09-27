@@ -1,6 +1,8 @@
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
 use crate::lexer::span::TextSpan;
+use std::{
+    fmt,
+    fmt::{Debug, Display, Formatter},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
@@ -96,7 +98,6 @@ impl Display for TokenKind {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     // Separators
@@ -138,34 +139,33 @@ pub enum TokenKind {
     Null,
 
     // Operators
-    Plus,               // +
-    Minus,              // -
-    Asterisk,           // *
-    Slash,              // /
-    Equals,             // =
-    Ampersand,          // &
-    Pipe,               // |
-    Caret,              // ^
-    DoubleAsterisk,     // **
-    Percent,            // %
-    Tilde,              // ~
-    GreaterThan,        // >
-    LessThan,           // <
-    GreaterThanEquals,  // >=
-    LessThanEquals,     // <=
-    EqualsEquals,       // ==
-    BangEquals,         // !=
-    Bang,                // !
-    And,                // &&
-    Or,                 // ||
-    Increment,          // ++
-    Decrement,          // --
-    MinusEquals,        // -=
-    PlusEquals,         // +=
+    Plus,              // +
+    Minus,             // -
+    Asterisk,          // *
+    Slash,             // /
+    Equals,            // =
+    Ampersand,         // &
+    Pipe,              // |
+    Caret,             // ^
+    DoubleAsterisk,    // **
+    Percent,           // %
+    Tilde,             // ~
+    GreaterThan,       // >
+    LessThan,          // <
+    GreaterThanEquals, // >=
+    LessThanEquals,    // <=
+    EqualsEquals,      // ==
+    BangEquals,        // !=
+    Bang,              // !
+    And,               // &&
+    Or,                // ||
+    Increment,         // ++
+    Decrement,         // --
+    MinusEquals,       // -=
+    PlusEquals,        // +=
 
     EOF,
     Whitespace,
     Bad,
     Comment,
 }
-

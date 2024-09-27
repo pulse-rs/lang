@@ -1,10 +1,13 @@
-use std::collections::HashMap;
-use std::rc::Rc;
-use crate::lexer::token::{Token, TokenKind};
-use crate::ast::ast::*;
-use crate::lexer::span::TextSpan;
+use crate::{
+    ast::ast::*,
+    error::PulseError::{ResolverError, SemanticError},
+    lexer::{
+        span::TextSpan,
+        token::{Token, TokenKind},
+    },
+};
 use anyhow::Result;
-use crate::error::PulseError::{ResolverError, SemanticError};
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -50,8 +53,8 @@ impl Scope {
 
 #[derive(Debug)]
 pub struct Resolver {
-    scopes: Vec<Scope>,
-    current_function_return_type: Option<Type>,
+    pub scopes: Vec<Scope>,
+    pub current_function_return_type: Option<Type>,
 }
 
 impl Resolver {
@@ -210,7 +213,8 @@ impl Resolver {
                     cond_type
                 ),
                 if_stmt.if_token.span.clone(),
-            ).into());
+            )
+            .into());
         }
 
         self.begin_scope();
@@ -228,7 +232,8 @@ impl Resolver {
                         else_if_cond_type
                     ),
                     else_if.condition.span(),
-                ).into());
+                )
+                .into());
             }
 
             self.begin_scope();
@@ -257,7 +262,8 @@ impl Resolver {
                             expected_type, expr_type
                         ),
                         ret_stmt.return_token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
         } else {
@@ -269,7 +275,8 @@ impl Resolver {
                             expected_type
                         ),
                         ret_stmt.return_token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
         }
@@ -289,9 +296,7 @@ impl Resolver {
 
     fn resolve_expr(&mut self, expr: &Expr) -> Result<()> {
         match expr {
-            Expr::Literal(_) => {
-                Ok(())
-            }
+            Expr::Literal(_) => Ok(()),
             Expr::Variable(var) => {
                 self.resolve_variable(var)?;
                 Ok(())
@@ -316,7 +321,8 @@ impl Resolver {
                     return Err(SemanticError(
                         "Logical operations require Bool operands".to_string(),
                         logical.token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 Ok(())
@@ -327,7 +333,8 @@ impl Resolver {
                     return Err(SemanticError(
                         format!("Undefined function '{}'", call.callee),
                         call.token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 for arg in &call.args {
@@ -352,7 +359,8 @@ impl Resolver {
             return Err(SemanticError(
                 format!("Undefined variable '{}'", var.ident),
                 var.token.span.clone(),
-            ).into());
+            )
+            .into());
         }
 
         Ok(())
@@ -364,7 +372,8 @@ impl Resolver {
                 return Err(SemanticError(
                     format!("Cannot assign to immutable variable '{}'", symbol.name),
                     assign.token.span.clone(),
-                ).into());
+                )
+                .into());
             }
             let value_type = self.infer_expr_type(&assign.value)?;
             if &symbol.symbol_type != &value_type {
@@ -374,13 +383,15 @@ impl Resolver {
                         symbol.name, symbol.symbol_type, value_type
                     ),
                     assign.token.span.clone(),
-                ).into());
+                )
+                .into());
             }
         } else {
             return Err(SemanticError(
                 format!("Undefined variable '{}'", assign.ident.literal()),
                 assign.token.span.clone(),
-            ).into());
+            )
+            .into());
         }
 
         self.resolve_expr(&assign.value)?;
@@ -404,38 +415,35 @@ impl Resolver {
                     Err(SemanticError(
                         format!("Undefined variable '{}'", var.ident).to_string(),
                         var.token.span.clone(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
-            Expr::Binary(bin) => {
-                match bin.operator {
-                    BinOpKind::GreaterThan
-                    | BinOpKind::LessThan
-                    | BinOpKind::Equals
-                    | BinOpKind::NotEquals
-                    | BinOpKind::LessThanOrEqual
-                    | BinOpKind::GreaterThanOrEqual => Ok(Type::Bool),
-                    BinOpKind::And | BinOpKind::Or => Ok(Type::Bool),
-                    BinOpKind::Plus
-                    | BinOpKind::Minus
-                    | BinOpKind::Multiply
-                    | BinOpKind::Divide
-                    | BinOpKind::Power
-                    | BinOpKind::Modulo => {
-                        let left_type = self.infer_expr_type(&bin.left)?;
-                        let right_type = self.infer_expr_type(&bin.right)?;
-                        if left_type == right_type {
-                            Ok(left_type)
-                        } else {
-                            Ok(Type::Void)
-                        }
+            Expr::Binary(bin) => match bin.operator {
+                BinOpKind::GreaterThan
+                | BinOpKind::LessThan
+                | BinOpKind::Equals
+                | BinOpKind::NotEquals
+                | BinOpKind::LessThanOrEqual
+                | BinOpKind::GreaterThanOrEqual => Ok(Type::Bool),
+                BinOpKind::And | BinOpKind::Or => Ok(Type::Bool),
+                BinOpKind::Plus
+                | BinOpKind::Minus
+                | BinOpKind::Multiply
+                | BinOpKind::Divide
+                | BinOpKind::Power
+                | BinOpKind::Modulo => {
+                    let left_type = self.infer_expr_type(&bin.left)?;
+                    let right_type = self.infer_expr_type(&bin.right)?;
+                    if left_type == right_type {
+                        Ok(left_type)
+                    } else {
+                        Ok(Type::Void)
                     }
-                    _ => Ok(Type::Void),
                 }
-            }
-            Expr::Unary(un) => {
-                self.infer_expr_type(&un.expr)
-            }
+                _ => Ok(Type::Void),
+            },
+            Expr::Unary(un) => self.infer_expr_type(&un.expr),
             Expr::Logical(_) => Ok(Type::Bool),
             Expr::Call(call) => {
                 if let Some(symbol) = self.resolve_symbol(&call.callee) {
@@ -444,12 +452,11 @@ impl Resolver {
                     Err(SemanticError(
                         format!("Undefined function '{}'", call.callee).to_string(),
                         call.token.span.clone(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
-            Expr::Assign(assign) => {
-                self.infer_expr_type(&assign.value)
-            }
+            Expr::Assign(assign) => self.infer_expr_type(&assign.value),
             Expr::Parenthesized(paren) => self.infer_expr_type(&paren.expr),
         }
     }
@@ -485,7 +492,8 @@ impl Resolver {
                             left_type, right_type
                         ),
                         bin.span(),
-                    ).into());
+                    )
+                    .into());
                 }
                 if left_type != Type::Int && left_type != Type::Float {
                     return Err(SemanticError(
@@ -494,7 +502,8 @@ impl Resolver {
                             bin.operator, left_type
                         ),
                         bin.span(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 Ok(())
@@ -509,7 +518,8 @@ impl Resolver {
                     return Err(SemanticError(
                         "Comparison operators require operands of the same type".to_string(),
                         bin.span(),
-                    ).into());
+                    )
+                    .into());
                 }
                 if left_type != Type::Int
                     && left_type != Type::Float
@@ -520,15 +530,15 @@ impl Resolver {
                         format!(
                             "Comparison operator '{:?}' not supported for type {:?}",
                             bin.operator, left_type
-                        ), bin.span(),
-                    ).into());
+                        ),
+                        bin.span(),
+                    )
+                    .into());
                 }
 
                 Ok(())
             }
-            _ => {
-                Ok(())
-            }
+            _ => Ok(()),
         }
     }
 
@@ -538,23 +548,19 @@ impl Resolver {
             UnOpKind::Minus => {
                 if expr_type != Type::Int && expr_type != Type::Float {
                     return Err(SemanticError(
-                        format!(
-                            "Unary operator '-' not supported for type {:?}",
-                            expr_type
-                        ),
+                        format!("Unary operator '-' not supported for type {:?}", expr_type),
                         un.operator.token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
             UnOpKind::BitwiseNot => {
                 if expr_type != Type::Int {
                     return Err(SemanticError(
-                        format!(
-                            "Unary operator '~' not supported for type {:?}",
-                            expr_type
-                        ),
+                        format!("Unary operator '~' not supported for type {:?}", expr_type),
                         un.operator.token.span.clone(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
         }

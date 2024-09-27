@@ -1,7 +1,8 @@
-use std::borrow::Cow;
-use std::fmt::{Display, Formatter};
-use crate::lexer::span::TextSpan;
-use crate::lexer::token::Token;
+use crate::lexer::{span::TextSpan, token::Token};
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
@@ -44,7 +45,14 @@ impl From<Expr> for Stmt {
 }
 
 impl Stmt {
-    pub fn new_fn(fn_token: Token, name: String, params: Vec<FnParam>, body: Block, exported: bool, return_type: Option<FunctionType>) -> Self {
+    pub fn new_fn(
+        fn_token: Token,
+        name: String,
+        params: Vec<FnParam>,
+        body: Block,
+        exported: bool,
+        return_type: Option<FunctionType>,
+    ) -> Self {
         Stmt::Fn(Fn {
             fn_token,
             name,
@@ -63,7 +71,13 @@ impl Stmt {
         })
     }
 
-    pub fn new_if(if_token: Token, condition: Box<Expr>, then_block: Block, else_ifs: Vec<ElseBlock>, else_block: Option<ElseBlock>) -> Self {
+    pub fn new_if(
+        if_token: Token,
+        condition: Box<Expr>,
+        then_block: Block,
+        else_ifs: Vec<ElseBlock>,
+        else_block: Option<ElseBlock>,
+    ) -> Self {
         Stmt::If(If {
             if_token,
             condition,
@@ -73,7 +87,11 @@ impl Stmt {
         })
     }
 
-    pub fn new_let(ident: Token, initializer: Box<Expr>, type_annotation: Option<TypeAnnotation>) -> Self {
+    pub fn new_let(
+        ident: Token,
+        initializer: Box<Expr>,
+        type_annotation: Option<TypeAnnotation>,
+    ) -> Self {
         Stmt::Let(Let {
             ident,
             initializer,
@@ -82,10 +100,7 @@ impl Stmt {
     }
 
     pub fn new_return(return_token: Token, expr: Option<Box<Expr>>) -> Self {
-        Stmt::Return(Return {
-            return_token,
-            expr,
-        })
+        Stmt::Return(Return { return_token, expr })
     }
 }
 
@@ -277,7 +292,6 @@ pub struct Assign {
     pub token: Token,
 }
 
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum UnOpKind {
     Minus,
@@ -351,7 +365,6 @@ impl BinOperator {
         }
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinOpAssociativity {
